@@ -99,10 +99,33 @@ export const ElectronCloudModule: React.FC = () => {
   const [showCrossSection, setShowCrossSection] = useState(false);
   const [particleCount, setParticleCount] = useState(15000);
   
-  const canvasWidth = 550;
-  const canvasHeight = 500;
+  // Responsive canvas size
+  const [canvasSize, setCanvasSize] = useState({ width: 550, height: 500 });
+  
+  useEffect(() => {
+    const updateCanvasSize = () => {
+      const isMobile = window.innerWidth < 640;
+      const isTablet = window.innerWidth >= 640 && window.innerWidth < 1024;
+      
+      if (isMobile) {
+        const width = Math.min(window.innerWidth - 32, 400);
+        setCanvasSize({ width, height: width * 0.9 });
+      } else if (isTablet) {
+        setCanvasSize({ width: 500, height: 450 });
+      } else {
+        setCanvasSize({ width: 550, height: 500 });
+      }
+    };
+    
+    updateCanvasSize();
+    window.addEventListener('resize', updateCanvasSize);
+    return () => window.removeEventListener('resize', updateCanvasSize);
+  }, []);
+  
+  const { width: canvasWidth, height: canvasHeight } = canvasSize;
   const isDragging = useRef(false);
   const lastMouse = useRef({ x: 0, y: 0 });
+  const lastTouchDistance = useRef(0);
   
   // Pre-generate particles based on probability distribution
   const particlesRef = useRef<Array<{ x: number; y: number; z: number; prob: number }>>([]);
@@ -353,6 +376,50 @@ export const ElectronCloudModule: React.FC = () => {
     setZoom(prev => Math.max(0.5, Math.min(3.0, prev + delta)));
   };
 
+  // Touch handlers for mobile
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      // Single finger - rotation
+      isDragging.current = true;
+      lastMouse.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    } else if (e.touches.length === 2) {
+      // Two fingers - zoom
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      lastTouchDistance.current = Math.sqrt(dx * dx + dy * dy);
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    e.preventDefault(); // Prevent scrolling
+    
+    if (e.touches.length === 1 && isDragging.current) {
+      // Single finger - rotation
+      const dx = e.touches[0].clientX - lastMouse.current.x;
+      const dy = e.touches[0].clientY - lastMouse.current.y;
+      setRotationY(prev => prev + dx * 0.01);
+      setRotationX(prev => Math.max(-Math.PI/2, Math.min(Math.PI/2, prev + dy * 0.01)));
+      lastMouse.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    } else if (e.touches.length === 2) {
+      // Two fingers - pinch to zoom
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      
+      if (lastTouchDistance.current > 0) {
+        const delta = (distance - lastTouchDistance.current) * 0.005;
+        setZoom(prev => Math.max(0.5, Math.min(3.0, prev + delta)));
+      }
+      
+      lastTouchDistance.current = distance;
+    }
+  };
+
+  const handleTouchEnd = () => {
+    isDragging.current = false;
+    lastTouchDistance.current = 0;
+  };
+
   // Available orbitals
   const orbitals: OrbitalState[] = [
     { n: 1, l: 0, m: 0 },  // 1s
@@ -371,35 +438,39 @@ export const ElectronCloudModule: React.FC = () => {
     >
       {/* Header */}
       <div>
-        <div className="flex items-center gap-3">
-          <h2 className="text-2xl font-bold text-white">
+        <div className="flex items-center gap-3 flex-wrap">
+          <h2 className="text-xl sm:text-2xl font-bold text-white">
             Hydrogen Electron Cloud Visualizer
           </h2>
           <span className="px-2 py-1 bg-amber-600/20 text-amber-400 text-xs font-medium rounded-full border border-amber-600/30">
             Bonus Content
           </span>
         </div>
-        <p className="text-slate-400 mt-1">
+        <p className="text-sm sm:text-base text-slate-400 mt-1">
           3D probability density |ψ|² for hydrogen atomic orbitals (supplementary visualization for deeper understanding)
         </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Canvas */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 flex flex-col items-center">
           <canvas
             ref={canvasRef}
-            className="rounded-lg shadow-2xl border border-slate-700 cursor-grab active:cursor-grabbing"
+            className="rounded-lg shadow-2xl border border-slate-700 cursor-grab active:cursor-grabbing touch-none max-w-full"
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
             onWheel={handleWheel}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
           />
           
           {/* Interaction hint */}
           <p className="text-xs text-slate-500 mt-2 text-center">
-            🖱️ Drag to rotate • Scroll to zoom
+            <span className="hidden sm:inline">🖱️ Drag to rotate • Scroll to zoom</span>
+            <span className="sm:hidden">👆 Drag to rotate • Pinch to zoom</span>
           </p>
           
           {/* Class 12 NEB Notes */}
