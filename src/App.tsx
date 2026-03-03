@@ -56,7 +56,7 @@ function App() {
   };
 
   return (
-    <div className={`flex h-screen bg-slate-950 text-white ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}>
+    <div className={`flex flex-col lg:flex-row h-screen bg-slate-950 text-white ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}>
       {/* Navigation Sidebar */}
       {!isFullscreen && <Navigation />}
       
@@ -71,8 +71,8 @@ function App() {
       )}
       
       {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto">
-        <div className="p-6 pb-4">
+      <main className="flex-1 overflow-y-auto pt-16 lg:pt-0">
+        <div className="p-4 sm:p-6 pb-4">
           <Suspense fallback={<ModuleLoader />}>
             <AnimatePresence mode="wait">
               {renderModule()}

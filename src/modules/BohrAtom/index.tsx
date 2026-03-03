@@ -28,10 +28,10 @@ export const BohrAtomModule: React.FC = () => {
       {/* Module Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-white">
+          <h2 className="text-xl sm:text-2xl font-bold text-white">
             Bohr Hydrogen Atom Simulator
           </h2>
-          <p className="text-slate-400 mt-1">
+          <p className="text-sm sm:text-base text-slate-400 mt-1">
             Interactive visualization of Bohr's atomic model with energy transitions
           </p>
         </div>
@@ -48,19 +48,19 @@ export const BohrAtomModule: React.FC = () => {
       </div>
 
       {/* Main Content - Responsive Grid */}
-      <div className="flex flex-wrap gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[auto_auto_1fr] gap-6">
         {/* Canvas */}
-        <div className="flex-shrink-0">
+        <div className="flex justify-center lg:justify-start">
           <BohrAtomCanvas width={canvasSize.width} height={canvasSize.height} />
         </div>
         
         {/* Energy Level Diagram */}
-        <div className="flex-shrink-0">
+        <div className="flex justify-center lg:justify-start">
           <EnergyLevelDiagram width={200} height={380} />
         </div>
 
         {/* Controls */}
-        <div className="flex-1 min-w-[280px] max-w-[350px] space-y-6">
+        <div className="w-full max-w-md mx-auto lg:mx-0 space-y-6">
           <BohrAtomControls />
         </div>
       </div>
